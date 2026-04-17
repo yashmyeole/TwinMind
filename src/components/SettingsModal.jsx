@@ -3,6 +3,7 @@ import { SYSTEM_SUGGESTION_PROMPT, SYSTEM_CHAT_PROMPT, DEFAULT_CONTEXT_WINDOW } 
 
 export default function SettingsModal({ isOpen, onClose }) {
   const [apiKey, setApiKey] = useState('');
+  const [showApiKey, setShowApiKey] = useState(false);
   const [suggestionPrompt, setSuggestionPrompt] = useState('');
   const [chatPrompt, setChatPrompt] = useState('');
   const [contextWindow, setContextWindow] = useState(DEFAULT_CONTEXT_WINDOW);
@@ -55,14 +56,24 @@ export default function SettingsModal({ isOpen, onClose }) {
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
               Groq API Key
             </label>
-            <input 
-              type="password" 
-              value={apiKey}
-              onChange={(e) => setApiKey(e.target.value)}
-              placeholder="gsk_..."
-              className="w-full px-4 py-2.5 border border-slate-300 dark:border-slate-600 rounded-lg bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 outline-none focus:border-indigo-500 dark:focus:border-indigo-400 transition-colors font-mono text-sm"
-              autoComplete="off"
-            />
+            <div className="relative">
+              <input 
+                type={showApiKey ? "text" : "password"}
+                value={apiKey}
+                onChange={(e) => setApiKey(e.target.value)}
+                placeholder="gsk_..."
+                className="w-full pl-4 pr-12 py-2.5 border border-slate-300 dark:border-slate-600 rounded-lg bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 outline-none focus:border-indigo-500 dark:focus:border-indigo-400 transition-colors font-mono text-sm"
+                autoComplete="off"
+              />
+              <button
+                type="button"
+                onClick={() => setShowApiKey(!showApiKey)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors text-lg leading-none"
+                title={showApiKey ? "Hide Key" : "Show Key"}
+              >
+                {showApiKey ? "👁️‍🗨️" : "👁️"}
+              </button>
+            </div>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-2 leading-relaxed">
               Required for all AI services. Your key is strictly stored locally.
             </p>

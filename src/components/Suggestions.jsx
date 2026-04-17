@@ -1,13 +1,17 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
 import { generateSuggestions } from '../services/suggestionService';
 
-export default function Suggestions({ transcripts, onRefresh, onSuggestionClick }) {
+const Suggestions = forwardRef(({ transcripts, onRefresh, onSuggestionClick }, ref) => {
   const [suggestionBatches, setSuggestionBatches] = useState([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState(null);
   
   // Keep track of the last processed transcript chunk to avoid useless reruns
   const lastProcessedTranscriptIdRef = useRef(null);
+
+  useImperativeHandle(ref, () => ({
+    getExportData: () => suggestionBatches
+  }));
 
   useEffect(() => {
     // If no new transcripts since last processed, stop
@@ -141,4 +145,6 @@ export default function Suggestions({ transcripts, onRefresh, onSuggestionClick 
       </div>
     </div>
   );
-}
+});
+
+export default Suggestions;

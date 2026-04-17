@@ -1,13 +1,17 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, forwardRef, useImperativeHandle } from 'react';
 import { sendChatMessage } from '../services/chatService';
 
-export default function Chat({ transcripts, externalQuery, setExternalQuery }) {
+const Chat = forwardRef(({ transcripts, externalQuery, setExternalQuery }, ref) => {
   const [messages, setMessages] = useState([]);
   const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [error, setError] = useState(null);
   
   const bottomRef = useRef(null);
+
+  useImperativeHandle(ref, () => ({
+    getExportData: () => messages
+  }));
 
   // Auto-scroll whenever messages update
   useEffect(() => {
@@ -136,4 +140,6 @@ export default function Chat({ transcripts, externalQuery, setExternalQuery }) {
       </div>
     </div>
   );
-}
+});
+
+export default Chat;
