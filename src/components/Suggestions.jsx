@@ -27,17 +27,22 @@ export default function Suggestions({ transcripts, onRefresh, onSuggestionClick 
         return;
       }
   
-      // Concatenate last 6 minutes of conversation context (12 chunks * 30s)
+      const rawWindowSize = localStorage.getItem('context_window_size');
+      const windowSize = rawWindowSize ? parseInt(rawWindowSize, 10) : 12;
+
+      // Concatenate dynamic subset of conversation context
       const transcriptContext = transcripts
-          .slice(-12) 
+          .slice(-windowSize) 
           .map(t => t.text)
           .join(" ");
+
+      const customPrompt = localStorage.getItem('suggestion_prompt');
   
       setIsGenerating(true);
       setError(null);
       
       try {
-        const newSuggestions = await generateSuggestions(apiKey, transcriptContext);
+        const newSuggestions = await generateSuggestions(apiKey, transcriptContext, customPrompt);
         
         if (newSuggestions && newSuggestions.length > 0) {
           // Append new batch to the top of the list

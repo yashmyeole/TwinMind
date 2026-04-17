@@ -29,10 +29,13 @@ export default function Chat({ transcripts, externalQuery, setExternalQuery }) {
     const newUserMsg = { id: Date.now().toString(), role: 'user', content: queryText };
     setMessages(prev => [...prev, newUserMsg]);
 
-    const transcriptContext = transcripts ? transcripts.slice(-15).map(t => t.text).join(" ") : "";
+    const rawWindowSize = localStorage.getItem('context_window_size');
+    const windowSize = rawWindowSize ? parseInt(rawWindowSize, 10) : 12; // fallback to 12 as defined in prompts
+    const transcriptContext = transcripts ? transcripts.slice(-windowSize).map(t => t.text).join(" ") : "";
+    const customChatPrompt = localStorage.getItem('chat_prompt');
 
     try {
-      const response = await sendChatMessage(apiKey, transcriptContext, messages, queryText);
+      const response = await sendChatMessage(apiKey, transcriptContext, messages, queryText, customChatPrompt);
       setMessages(prev => [...prev, { id: (Date.now()+1).toString(), role: 'ai', content: response }]);
     } catch (err) {
       setError(err.message);

@@ -1,15 +1,17 @@
 import { SYSTEM_CHAT_PROMPT } from '../constants/prompts';
 
-export async function sendChatMessage(apiKey, transcriptContext, chatHistory, newUserMessage) {
+export async function sendChatMessage(apiKey, transcriptContext, chatHistory, newUserMessage, customChatPrompt = null) {
   if (!apiKey) {
     throw new Error("Missing Groq API Key.");
   }
+
+  const systemMessage = customChatPrompt || SYSTEM_CHAT_PROMPT;
 
   // Format history for Groq 
   const messages = [
     {
       role: 'system',
-      content: SYSTEM_CHAT_PROMPT + (transcriptContext ? `\n\nRecent Meeting Transcript:\n${transcriptContext}` : '\n\nNo transcript available yet.')
+      content: systemMessage + (transcriptContext ? `\n\nRecent Meeting Transcript:\n${transcriptContext}` : '\n\nNo transcript available yet.')
     }
   ];
 
