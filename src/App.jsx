@@ -8,6 +8,7 @@ function App() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const [apiKeyExists, setApiKeyExists] = useState(false)
   const [transcripts, setTranscripts] = useState([])
+  const [selectedSuggestion, setSelectedSuggestion] = useState(null)
   const flushMicRef = useRef(null)
 
   // Check API key existence on mount and after modal closes
@@ -49,10 +50,18 @@ function App() {
           <Transcript transcripts={transcripts} setTranscripts={setTranscripts} flushMicRef={flushMicRef} />
         </div>
         <div className="h-[500px] lg:h-auto overflow-hidden">
-          <Suggestions transcripts={transcripts} onRefresh={() => { if(flushMicRef.current) flushMicRef.current() }} />
+          <Suggestions 
+            transcripts={transcripts} 
+            onRefresh={() => { if(flushMicRef.current) flushMicRef.current() }} 
+            onSuggestionClick={(s) => setSelectedSuggestion(s.title + ": " + s.detail)}
+          />
         </div>
         <div className="h-[500px] lg:h-auto overflow-hidden">
-          <Chat />
+          <Chat 
+             transcripts={transcripts}
+             externalQuery={selectedSuggestion}
+             setExternalQuery={setSelectedSuggestion}
+          />
         </div>
       </div>
 

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { generateSuggestions } from '../services/suggestionService';
 
-export default function Suggestions({ transcripts, onRefresh }) {
+export default function Suggestions({ transcripts, onRefresh, onSuggestionClick }) {
   const [suggestionBatches, setSuggestionBatches] = useState([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState(null);
@@ -105,7 +105,11 @@ export default function Suggestions({ transcripts, onRefresh }) {
                     else if (s.category.toLowerCase().includes("fact")) colorClass = "text-rose-500";
 
                     return (
-                      <div key={idx} className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700/60 p-3.5 rounded-xl shadow-[0_2px_8px_-3px_rgba(0,0,0,0.1)] hover:shadow-[0_4px_12px_-4px_rgba(0,0,0,0.15)] hover:border-indigo-300 dark:hover:border-indigo-500/50 transition-all cursor-pointer group">
+                      <div 
+                        key={idx} 
+                        onClick={() => onSuggestionClick(s)}
+                        className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700/60 p-3.5 rounded-xl shadow-[0_2px_8px_-3px_rgba(0,0,0,0.1)] hover:shadow-[0_4px_12px_-4px_rgba(0,0,0,0.15)] hover:border-indigo-300 dark:hover:border-indigo-500/50 transition-all cursor-pointer group"
+                      >
                         <div className={`text-[11px] font-bold ${colorClass} mb-1 uppercase tracking-wider`}>
                           {s.category}
                         </div>
