@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback } from 'react';
 
-export function useMicrophone({ onAudioData } = {}) {
+export function useMicrophone({ onAudioData, timeslice = 30000 } = {}) {
   const [isRecording, setIsRecording] = useState(false);
   const [error, setError] = useState(null);
   const mediaRecorderRef = useRef(null);
@@ -9,11 +9,9 @@ export function useMicrophone({ onAudioData } = {}) {
   const startMic = useCallback(async () => {
     try {
       setError(null);
-      // Request microphone access
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       streamRef.current = stream;
       
-      // Determine the best supported audio MIME type
       let mimeType = 'audio/webm';
       if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
         mimeType = 'audio/webm;codecs=opus';
@@ -25,33 +23,27 @@ export function useMicrophone({ onAudioData } = {}) {
       
       mediaRecorderRef.current.ondataavailable = (event) => {
         if (event.data.size > 0) {
-          console.log(`🎤 Captured Audio Blob: ${event.data.size} bytes (${mimeType})`);
           if (onAudioData) onAudioData(event.data);
         }
       };
 
-      // Start recording
-      mediaRecorderRef.current.start();
+      // Pass timeslice so it fires ondataavailable automatically every X ms
+      mediaRecorderRef.current.start(timeslice);
       setIsRecording(true);
       
     } catch (err) {
       console.error("Microphone access error:", err);
       if (err.name === 'NotAllowedError') {
-        setError("Microphone access denied. Please click 'Allow' in your browser permissions.");
-      } else if (err.name === 'NotFoundError') {
-        setError("No microphone found on your device.");
+        setError("Microphone access denied. Please click 'Allow' in your browser.");
       } else {
         setError("An error occurred while accessing the microphone.");
       }
     }
-  }, [onAudioData]);
+  }, [onAudioData, timeslice]);
 
   const stopMic = useCallback(() => {
     if (mediaRecorderRef.current && isRecording) {
-      // Stopping the recorder will trigger a final `ondataavailable` event
       mediaRecorderRef.current.stop();
-      
-      // Stop all audio tracks to release the hardware indicator light
       if (streamRef.current) {
         streamRef.current.getTracks().forEach(track => track.stop());
       }
@@ -59,5 +51,12 @@ export function useMicrophone({ onAudioData } = {}) {
     }
   }, [isRecording]);
 
-  return { isRecording, startMic, stopMic, error };
+  const flushMic = useCallback(() => {
+    // Manually request data from the recorder (used for manual refresh button)
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.requestData();
+    }
+  }, [isRecording]);
+
+  return { isRecording, startMic, stopMic, flushMic, error };
 }
