@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Transcript from './components/Transcript'
 import Suggestions from './components/Suggestions'
 import Chat from './components/Chat'
@@ -8,6 +8,7 @@ function App() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const [apiKeyExists, setApiKeyExists] = useState(false)
   const [transcripts, setTranscripts] = useState([])
+  const flushMicRef = useRef(null)
 
   // Check API key existence on mount and after modal closes
   useEffect(() => {
@@ -45,10 +46,10 @@ function App() {
       
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 p-6 flex-1 overflow-hidden">
         <div className="h-[500px] lg:h-auto overflow-hidden">
-          <Transcript transcripts={transcripts} setTranscripts={setTranscripts} />
+          <Transcript transcripts={transcripts} setTranscripts={setTranscripts} flushMicRef={flushMicRef} />
         </div>
         <div className="h-[500px] lg:h-auto overflow-hidden">
-          <Suggestions transcripts={transcripts} />
+          <Suggestions transcripts={transcripts} onRefresh={() => { if(flushMicRef.current) flushMicRef.current() }} />
         </div>
         <div className="h-[500px] lg:h-auto overflow-hidden">
           <Chat />

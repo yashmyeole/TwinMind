@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { generateSuggestions } from '../services/suggestionService';
 
-export default function Suggestions({ transcripts }) {
+export default function Suggestions({ transcripts, onRefresh }) {
   const [suggestionBatches, setSuggestionBatches] = useState([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState(null);
@@ -62,12 +62,7 @@ export default function Suggestions({ transcripts }) {
   }, [transcripts]);
 
   const handleManualRefresh = () => {
-    // Reset the ref temporarily and artificially trigger what useEffect does if there's text
-    if (transcripts.length > 0) {
-      lastProcessedTranscriptIdRef.current = null;
-      // create a shallow copy to trigger a theoretical reference change if needed, but 
-      // setting ref to null then calling the logic block works.
-    }
+    if (onRefresh) onRefresh();
   }
 
   return (

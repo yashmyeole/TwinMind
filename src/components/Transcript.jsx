@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useMicrophone } from '../hooks/useMicrophone';
 import { transcribeAudio } from '../services/transcriptionService';
 
-export default function Transcript({ transcripts, setTranscripts }) {
+export default function Transcript({ transcripts, setTranscripts, flushMicRef }) {
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [transcriptionError, setTranscriptionError] = useState(null);
   
@@ -41,10 +41,16 @@ export default function Transcript({ transcripts, setTranscripts }) {
     }
   };
 
-  const { isRecording, startMic, stopMic, error: micError } = useMicrophone({ 
+  const { isRecording, startMic, stopMic, flushMic, error: micError } = useMicrophone({ 
     onAudioData: handleAudioData,
     timeslice: 30000 // fire roughly every 30 seconds
   });
+
+  useEffect(() => {
+    if (flushMicRef) {
+      flushMicRef.current = flushMic;
+    }
+  }, [flushMic, flushMicRef]);
 
   return (
     <div className="column h-full flex flex-col relative">
