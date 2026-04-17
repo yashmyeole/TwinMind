@@ -7,6 +7,7 @@ import SettingsModal from './components/SettingsModal'
 function App() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const [apiKeyExists, setApiKeyExists] = useState(false)
+  const [transcripts, setTranscripts] = useState([])
 
   // Check API key existence on mount and after modal closes
   useEffect(() => {
@@ -44,10 +45,10 @@ function App() {
       
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 p-6 flex-1 overflow-hidden">
         <div className="h-[500px] lg:h-auto overflow-hidden">
-          <Transcript />
+          <Transcript transcripts={transcripts} setTranscripts={setTranscripts} />
         </div>
         <div className="h-[500px] lg:h-auto overflow-hidden">
-          <Suggestions />
+          <Suggestions transcripts={transcripts} />
         </div>
         <div className="h-[500px] lg:h-auto overflow-hidden">
           <Chat />

@@ -2,8 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useMicrophone } from '../hooks/useMicrophone';
 import { transcribeAudio } from '../services/transcriptionService';
 
-export default function Transcript() {
-  const [transcripts, setTranscripts] = useState([]);
+export default function Transcript({ transcripts, setTranscripts }) {
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [transcriptionError, setTranscriptionError] = useState(null);
   

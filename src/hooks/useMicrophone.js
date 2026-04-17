@@ -5,6 +5,7 @@ export function useMicrophone({ onAudioData, timeslice = 30000 } = {}) {
   const [error, setError] = useState(null);
   const mediaRecorderRef = useRef(null);
   const streamRef = useRef(null);
+  const intervalRef = useRef(null);
 
   const startMic = useCallback(async () => {
     try {
@@ -19,17 +20,30 @@ export function useMicrophone({ onAudioData, timeslice = 30000 } = {}) {
         mimeType = 'audio/mp4'; 
       }
 
-      mediaRecorderRef.current = new MediaRecorder(stream, { mimeType });
-      
-      mediaRecorderRef.current.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          if (onAudioData) onAudioData(event.data);
-        }
+      const startRecordingChunk = () => {
+        if (!streamRef.current) return;
+        const recorder = new MediaRecorder(streamRef.current, { mimeType });
+        
+        recorder.ondataavailable = (event) => {
+          if (event.data.size > 0 && onAudioData) {
+            onAudioData(event.data);
+          }
+        };
+        
+        recorder.start();
+        mediaRecorderRef.current = recorder;
       };
 
-      // Pass timeslice so it fires ondataavailable automatically every X ms
-      mediaRecorderRef.current.start(timeslice);
+      startRecordingChunk();
       setIsRecording(true);
+
+      // Stop the current recorder and immediately start a new one to force new file headers
+      intervalRef.current = setInterval(() => {
+        if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+          mediaRecorderRef.current.stop(); // Triggers ondataavailable with the full chunk
+        }
+        startRecordingChunk();
+      }, timeslice);
       
     } catch (err) {
       console.error("Microphone access error:", err);
@@ -42,8 +56,15 @@ export function useMicrophone({ onAudioData, timeslice = 30000 } = {}) {
   }, [onAudioData, timeslice]);
 
   const stopMic = useCallback(() => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+    
     if (mediaRecorderRef.current && isRecording) {
-      mediaRecorderRef.current.stop();
+      if (mediaRecorderRef.current.state === 'recording') {
+        mediaRecorderRef.current.stop();
+      }
       if (streamRef.current) {
         streamRef.current.getTracks().forEach(track => track.stop());
       }
@@ -52,11 +73,36 @@ export function useMicrophone({ onAudioData, timeslice = 30000 } = {}) {
   }, [isRecording]);
 
   const flushMic = useCallback(() => {
-    // Manually request data from the recorder (used for manual refresh button)
-    if (mediaRecorderRef.current && isRecording) {
-      mediaRecorderRef.current.requestData();
+    // Manually push current chunk and restart
+    if (isRecording && streamRef.current && mediaRecorderRef.current) {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+      if (mediaRecorderRef.current.state === 'recording') {
+        mediaRecorderRef.current.stop();
+      }
+      
+      let mimeType = 'audio/webm';
+      if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) mimeType = 'audio/webm;codecs=opus';
+      else if (MediaRecorder.isTypeSupported('audio/mp4')) mimeType = 'audio/mp4';
+      
+      const startRecordingChunk = () => {
+        if (!streamRef.current) return;
+        const recorder = new MediaRecorder(streamRef.current, { mimeType });
+        recorder.ondataavailable = (event) => {
+          if (event.data.size > 0 && onAudioData) onAudioData(event.data);
+        };
+        recorder.start();
+        mediaRecorderRef.current = recorder;
+      };
+
+      startRecordingChunk();
+      intervalRef.current = setInterval(() => {
+        if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+          mediaRecorderRef.current.stop();
+        }
+        startRecordingChunk();
+      }, timeslice);
     }
-  }, [isRecording]);
+  }, [isRecording, onAudioData, timeslice]);
 
   return { isRecording, startMic, stopMic, flushMic, error };
 }
