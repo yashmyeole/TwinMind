@@ -27,9 +27,9 @@ export default function Suggestions({ transcripts, onRefresh, onSuggestionClick 
         return;
       }
   
-      // Concatenate last few minutes of conversation context
+      // Concatenate last 6 minutes of conversation context (12 chunks * 30s)
       const transcriptContext = transcripts
-          .slice(-10) // Last 10 chunks (approx 5 mins of context)
+          .slice(-12) 
           .map(t => t.text)
           .join(" ");
   
