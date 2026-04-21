@@ -1,30 +1,32 @@
-import { useState, useEffect, useRef } from 'react'
-import Transcript from './components/Transcript'
-import Suggestions from './components/Suggestions'
-import Chat from './components/Chat'
-import SettingsModal from './components/SettingsModal'
+import { useState, useEffect, useRef } from "react";
+import Transcript from "./components/Transcript";
+import Suggestions from "./components/Suggestions";
+import Chat from "./components/Chat";
+import SettingsModal from "./components/SettingsModal";
 
 function App() {
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false)
-  const [apiKeyExists, setApiKeyExists] = useState(false)
-  const [transcripts, setTranscripts] = useState([])
-  const [selectedSuggestion, setSelectedSuggestion] = useState(null)
-  const flushMicRef = useRef(null)
-  const suggestionsRef = useRef(null)
-  const chatRef = useRef(null)
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [apiKeyExists, setApiKeyExists] = useState(false);
+  const [transcripts, setTranscripts] = useState([]);
+  const [selectedSuggestion, setSelectedSuggestion] = useState(null);
+  const flushMicRef = useRef(null);
+  const suggestionsRef = useRef(null);
+  const chatRef = useRef(null);
 
   // Check API key existence on mount and after modal closes
   useEffect(() => {
     const checkApiKey = () => {
-      setApiKeyExists(!!localStorage.getItem('groq_api_key'))
-    }
-    checkApiKey()
-  }, [isSettingsOpen])
+      setApiKeyExists(!!localStorage.getItem("groq_api_key"));
+    };
+    checkApiKey();
+  }, [isSettingsOpen]);
 
   const handleExport = () => {
-    const rawSuggestions = suggestionsRef.current ? suggestionsRef.current.getExportData() : [];
+    const rawSuggestions = suggestionsRef.current
+      ? suggestionsRef.current.getExportData()
+      : [];
     const rawChat = chatRef.current ? chatRef.current.getExportData() : [];
-    
+
     const htmlContent = `
 <!DOCTYPE html>
 <html lang="en">
@@ -55,41 +57,63 @@ function App() {
   <p style="color: #6b7280; margin-top: 0;"><strong>Generated:</strong> ${new Date().toLocaleString()}</p>
   
   <h2>1. Directed Q&A / Action Items</h2>
-  ${rawChat.length === 0 ? '<p><i>No direct chat inquiries were recorded during this meeting.</i></p>' : 
-    rawChat.map(msg => `
+  ${
+    rawChat.length === 0
+      ? "<p><i>No direct chat inquiries were recorded during this meeting.</i></p>"
+      : rawChat
+          .map(
+            (msg) => `
       <div class="chat-block">
-        <div class="chat-role ${msg.role === 'ai' ? 'ai' : ''}">${msg.role === 'user' ? '👤 User:' : '🤖 TwinMind AI:'}</div>
+        <div class="chat-role ${msg.role === "ai" ? "ai" : ""}">${msg.role === "user" ? "👤 User:" : "🤖 TwinMind AI:"}</div>
         <div style="white-space: pre-wrap;">${msg.content}</div>
       </div>
-    `).join('')
+    `,
+          )
+          .join("")
   }
   
   <h2>2. Key Meeting Insights & Suggestions</h2>
-  ${rawSuggestions.length === 0 ? '<p><i>No AI insights were generated during this meeting.</i></p>' : 
-    rawSuggestions.map(batch => `
+  ${
+    rawSuggestions.length === 0
+      ? "<p><i>No AI insights were generated during this meeting.</i></p>"
+      : rawSuggestions
+          .map(
+            (batch) => `
       <div style="margin-bottom: 40px;">
         <div class="timestamp">Insights generated at ${batch.timestamp}</div>
-        ${batch.suggestions.map(s => `
+        ${batch.suggestions
+          .map(
+            (s) => `
           <div class="suggestion-card">
             <div class="suggestion-cat">${s.category}</div>
             <strong style="display: block; margin-bottom: 6px; font-size: 1.1em; color: #111827;">${s.title}</strong>
             <p style="margin: 0; color: #4b5563;">${s.detail}</p>
           </div>
-        `).join('')}
+        `,
+          )
+          .join("")}
       </div>
-    `).join('')
+    `,
+          )
+          .join("")
   }
   
   <hr style="margin: 50px 0; border: 0; border-top: 2px solid #e5e7eb;" />
   
   <h2>3. Verbatim Transcript Appendix</h2>
   <div style="background: #f9fafb; padding: 20px; border-radius: 8px; border: 1px solid #e5e7eb;">
-  ${transcripts.length === 0 ? '<p><i>No audio transcript was recorded.</i></p>' : 
-    transcripts.map(t => `
+  ${
+    transcripts.length === 0
+      ? "<p><i>No audio transcript was recorded.</i></p>"
+      : transcripts
+          .map(
+            (t) => `
       <div class="transcript-line">
         <span class="timestamp">[${t.timestamp}]</span> ${t.text}
       </div>
-    `).join('')
+    `,
+          )
+          .join("")
   }
   </div>
 </body>
@@ -97,19 +121,19 @@ function App() {
 
     const blob = new Blob([htmlContent], { type: "text/html;charset=utf-8" });
     const url = URL.createObjectURL(blob);
-    
+
     // Create hidden anchor to trigger download
-    const a = document.createElement('a');
+    const a = document.createElement("a");
     a.href = url;
-    a.download = `TwinMind_Meeting_Notes_${new Date().toISOString().split('T')[0]}.html`;
+    a.download = `TwinMind_Meeting_Notes_${new Date().toISOString().split("T")[0]}.html`;
     document.body.appendChild(a);
     a.click();
-    
+
     // Cleanup
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
   };
-  
+
   return (
     <div className="flex flex-col h-screen min-h-[100dvh] bg-slate-50 dark:bg-slate-900">
       <header className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex justify-between items-center shadow-sm z-10">
@@ -117,14 +141,14 @@ function App() {
           🧠 TwinMind
         </h1>
         <div className="flex items-center gap-3">
-          <button 
+          <button
             onClick={handleExport}
             className="flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition text-slate-700 dark:text-slate-300 font-medium text-sm border border-slate-200 dark:border-slate-700"
             title="Export session data as JSON"
           >
             📥 Export
           </button>
-          <button 
+          <button
             onClick={() => setIsSettingsOpen(true)}
             className="flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition text-slate-700 dark:text-slate-300 font-medium text-sm border border-slate-200 dark:border-slate-700"
             title={apiKeyExists ? "API Key Configured" : "Missing API Key"}
@@ -144,32 +168,43 @@ function App() {
           </button>
         </div>
       </header>
-      
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 p-6 flex-1 overflow-hidden">
         <div className="h-[500px] lg:h-auto overflow-hidden">
-          <Transcript transcripts={transcripts} setTranscripts={setTranscripts} flushMicRef={flushMicRef} />
-        </div>
-        <div className="h-[500px] lg:h-auto overflow-hidden">
-          <Suggestions 
-            ref={suggestionsRef}
-            transcripts={transcripts} 
-            onRefresh={() => { if(flushMicRef.current) flushMicRef.current() }} 
-            onSuggestionClick={(s) => setSelectedSuggestion(s.title + ": " + s.detail)}
+          <Transcript
+            transcripts={transcripts}
+            setTranscripts={setTranscripts}
+            flushMicRef={flushMicRef}
           />
         </div>
         <div className="h-[500px] lg:h-auto overflow-hidden">
-          <Chat 
-             ref={chatRef}
-             transcripts={transcripts}
-             externalQuery={selectedSuggestion}
-             setExternalQuery={setSelectedSuggestion}
+          <Suggestions
+            ref={suggestionsRef}
+            transcripts={transcripts}
+            onRefresh={() => {
+              if (flushMicRef.current) flushMicRef.current();
+            }}
+            onSuggestionClick={(s) =>
+              setSelectedSuggestion(s.title + ": " + s.detail)
+            }
+          />
+        </div>
+        <div className="h-[500px] lg:h-auto overflow-hidden">
+          <Chat
+            ref={chatRef}
+            transcripts={transcripts}
+            externalQuery={selectedSuggestion}
+            setExternalQuery={setSelectedSuggestion}
           />
         </div>
       </div>
 
-      <SettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
+      <SettingsModal
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+      />
     </div>
-  )
+  );
 }
 
-export default App
+export default App;

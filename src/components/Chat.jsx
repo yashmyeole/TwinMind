@@ -1,5 +1,7 @@
 import React, { useState, useRef, useEffect, forwardRef, useImperativeHandle } from 'react';
 import { sendChatMessage } from '../services/chatService';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 const Chat = forwardRef(({ transcripts, externalQuery, setExternalQuery }, ref) => {
   const [messages, setMessages] = useState([]);
@@ -31,7 +33,10 @@ const Chat = forwardRef(({ transcripts, externalQuery, setExternalQuery }, ref) 
     setIsTyping(true);
 
     const newUserMsg = { id: Date.now().toString(), role: 'user', content: queryText };
-    setMessages(prev => [...prev, newUserMsg]);
+    const tempAiMsgId = (Date.now()+1).toString();
+    const newAiMsg = { id: tempAiMsgId, role: 'ai', content: '' };
+    
+    setMessages(prev => [...prev, newUserMsg, newAiMsg]);
 
     const rawWindowSize = localStorage.getItem('context_window_size');
     const windowSize = rawWindowSize ? parseInt(rawWindowSize, 10) : 12; // fallback to 12 as defined in prompts
@@ -39,13 +44,34 @@ const Chat = forwardRef(({ transcripts, externalQuery, setExternalQuery }, ref) 
     const customChatPrompt = localStorage.getItem('chat_prompt');
 
     try {
-      const response = await sendChatMessage(apiKey, transcriptContext, messages, queryText, customChatPrompt);
-      setMessages(prev => [...prev, { id: (Date.now()+1).toString(), role: 'ai', content: response }]);
+      // Exclude the placeholder AI message we just added from history
+      const historyToPass = messages;
+      setInputValue('');
+      
+      const fullResponse = await sendChatMessage(
+        apiKey, 
+        transcriptContext, 
+        historyToPass, 
+        queryText, 
+        customChatPrompt,
+        (token) => {
+          setMessages(prev => prev.map(msg => 
+            msg.id === tempAiMsgId ? { ...msg, content: msg.content + token } : msg
+          ));
+        }
+      );
+      
+      // Ensure the final content is exactly what we got (in case of dropped frames UI-side)
+      setMessages(prev => prev.map(msg => 
+        msg.id === tempAiMsgId ? { ...msg, content: fullResponse } : msg
+      ));
+
     } catch (err) {
       setError(err.message);
+      // Remove placeholder message if failed
+      setMessages(prev => prev.filter(msg => msg.id !== tempAiMsgId));
     } finally {
       setIsTyping(false);
-      setInputValue('');
     }
   };
 
@@ -90,13 +116,19 @@ const Chat = forwardRef(({ transcripts, externalQuery, setExternalQuery }, ref) 
                 className={`flex w-full ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
               >
                 <div 
-                  className={`max-w-[85%] px-4 py-2.5 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap ${
+                  className={`max-w-[85%] px-4 py-2.5 rounded-2xl text-sm leading-relaxed ${
                     msg.role === 'user' 
-                      ? 'bg-indigo-500 text-white rounded-br-sm shadow-sm font-medium' 
-                      : 'bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700/60 rounded-bl-sm shadow-[0_2px_8px_-3px_rgba(0,0,0,0.1)]'
+                      ? 'bg-indigo-500 text-white rounded-br-sm shadow-sm font-medium whitespace-pre-wrap' 
+                      : 'bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700/60 rounded-bl-sm shadow-[0_2px_8px_-3px_rgba(0,0,0,0.1)] prose prose-sm dark:prose-invert max-w-none prose-p:my-1 prose-headings:my-2 prose-ul:my-1 prose-li:my-0'
                   }`}
                 >
-                  {msg.content}
+                  {msg.role === 'ai' ? (
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                      {msg.content}
+                    </ReactMarkdown>
+                  ) : (
+                    msg.content
+                  )}
                 </div>
               </div>
             ))}
@@ -105,9 +137,9 @@ const Chat = forwardRef(({ transcripts, externalQuery, setExternalQuery }, ref) 
               <div className="flex w-full justify-start">
                 <div className="max-w-[85%] px-4 py-3.5 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700/60 rounded-2xl rounded-bl-sm shadow-[0_2px_8px_-3px_rgba(0,0,0,0.1)]">
                   <div className="flex gap-1.5 items-center justify-center">
-                    <span className="w-1.5 h-1.5 rounded-full bg-slate-400 animate-bounce" style={{ animationDelay: '0ms' }}></span>
-                    <span className="w-1.5 h-1.5 rounded-full bg-slate-400 animate-bounce" style={{ animationDelay: '150ms' }}></span>
-                    <span className="w-1.5 h-1.5 rounded-full bg-slate-400 animate-bounce" style={{ animationDelay: '300ms' }}></span>
+                    <span className="w-1.5 h-1.5 rounded-full bg-slate-400 animate-pulse" style={{ animationDelay: '0ms' }}></span>
+                    <span className="w-1.5 h-1.5 rounded-full bg-slate-400 animate-pulse" style={{ animationDelay: '150ms' }}></span>
+                    <span className="w-1.5 h-1.5 rounded-full bg-slate-400 animate-pulse" style={{ animationDelay: '300ms' }}></span>
                   </div>
                 </div>
               </div>

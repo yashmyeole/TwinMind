@@ -1,6 +1,6 @@
 import { SYSTEM_CHAT_PROMPT } from '../constants/prompts';
 
-export async function sendChatMessage(apiKey, transcriptContext, chatHistory, newUserMessage, customChatPrompt = null) {
+export async function sendChatMessage(apiKey, transcriptContext, chatHistory, newUserMessage, customChatPrompt = null, onChunk = null) {
   if (!apiKey) {
     throw new Error("Missing Groq API Key.");
   }
@@ -40,7 +40,7 @@ export async function sendChatMessage(apiKey, transcriptContext, chatHistory, ne
         model: 'llama-3.3-70b-versatile', 
         messages: messages,
         temperature: 0.5,
-        stream: false // To keep UI simple we wait for the generation. Alternatively, stream can be built out using the fetch body reader.
+        stream: true
       })
     });
 
@@ -49,11 +49,40 @@ export async function sendChatMessage(apiKey, transcriptContext, chatHistory, ne
       throw new Error(errorData?.error?.message || `API Error: ${response.status}`);
     }
 
-    const data = await response.json();
-    return data.choices[0].message.content;
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder("utf-8");
+    let fullContent = "";
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      const chunkText = decoder.decode(value, { stream: true });
+      const lines = chunkText.split('\n');
+
+      for (const line of lines) {
+        if (line.startsWith('data: ') && line !== 'data: [DONE]') {
+          try {
+            const parsed = JSON.parse(line.substring(6));
+            if (parsed.choices && parsed.choices[0] && parsed.choices[0].delta && parsed.choices[0].delta.content) {
+              const token = parsed.choices[0].delta.content;
+              fullContent += token;
+              if (onChunk) {
+                onChunk(token);
+              }
+            }
+          } catch (e) {
+            // Ignore parse errors for incomplete chunks
+          }
+        }
+      }
+    }
+
+    return fullContent;
 
   } catch (err) {
     console.error("Chat Service Error:", err);
     throw err;
   }
 }
+

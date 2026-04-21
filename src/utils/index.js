@@ -1,2 +1,1 @@
-// Utility functions will go here
-export {};
+export { containsQuestion, containsFactualClaim, detectStatementType } from './questionDetector';

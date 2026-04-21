@@ -8,7 +8,8 @@ export async function generateSuggestions(apiKey, transcriptContext, customPromp
     return [];
   }
 
-  const systemMessage = customPrompt || SYSTEM_SUGGESTION_PROMPT;
+  // Always use the main suggestion prompt (which now generates exactly 3 suggestions)
+  let systemMessage = customPrompt || SYSTEM_SUGGESTION_PROMPT;
 
   try {
     const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
@@ -18,7 +19,7 @@ export async function generateSuggestions(apiKey, transcriptContext, customPromp
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model: 'llama-3.3-70b-versatile', 
+        model: 'llama-3.3-70b-versatile',
         messages: [
           {
             role: 'system',
@@ -26,12 +27,12 @@ export async function generateSuggestions(apiKey, transcriptContext, customPromp
           },
           {
             role: 'user',
-            content: `Recent Transcript:\n${transcriptContext}`
+            content: `Recent Transcript:\n${transcriptContext}\n\nRespond with JSON format only.`
           }
         ],
         temperature: 0.3,
         // Using response_format for strict json
-        response_format: { type: "json_object" } 
+        response_format: { type: "json_object" }
       })
     });
 
@@ -42,13 +43,13 @@ export async function generateSuggestions(apiKey, transcriptContext, customPromp
 
     const data = await response.json();
     let content = data.choices[0].message.content;
-    
+
     // Parse the JSON. We adapt because we asked for {"suggestions": [...]} via JSON object forcing
     let parsed;
     try {
       parsed = JSON.parse(content);
-      if (parsed.suggestions) {
-         parsed = parsed.suggestions; 
+      if (parsed.suggestions !== undefined) {
+        parsed = parsed.suggestions;
       }
     } catch (e) {
       console.error("Failed to parse JSON content from LLM:", content);
@@ -57,12 +58,13 @@ export async function generateSuggestions(apiKey, transcriptContext, customPromp
 
     // Ensure it's an array
     if (!Array.isArray(parsed)) {
-       const possibleArray = Object.values(parsed).find(val => Array.isArray(val));
-       if (possibleArray) parsed = possibleArray;
-       else parsed = [parsed];
+      const possibleArray = Object.values(parsed).find(val => Array.isArray(val));
+      if (possibleArray) parsed = possibleArray;
+      else if (parsed === null || Object.keys(parsed).length === 0) parsed = [];
+      else parsed = [parsed];
     }
-    
-    return parsed.slice(0, 3); // Ensure exactly 3
+
+    return parsed.slice(0, 3); // Cap at 3
 
   } catch (err) {
     console.error("Suggestion Service Error:", err);
