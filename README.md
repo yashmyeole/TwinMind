@@ -5,6 +5,7 @@ TwinMind is a highly responsive, low-latency AI meeting assistant built to proce
 Models: Groq for everything. Whisper Large V3 for transcription. GPT-OSS 120B for suggestions and chat. Same model for everyone so we are comparing prompts quality.
 
 ## ✨ Features
+
 * **Live Audio Transcription Blocking:** Continuously chunks and transcribes microphone input automatically.
 * **Intelligent Auto-Suggestions:** Watches the conversational state silently in the background. If you make a claim, it surfaces a Fact Check. If discussion stalls, it surfaces a novel Talking Point.
 * **Context-Aware Deep Chat:** Click any generated suggestion or type a custom question to rapidly receive detailed answers sourced meticulously from the recent transcript context.
@@ -15,18 +16,19 @@ Models: Groq for everything. Whisper Large V3 for transcription. GPT-OSS 120B fo
 ## 🚀 Setup Instructions
 
 1. **Clone & Install**
+
    ```bash
-   git clone <repo-url>
+   git clone https://github.com/yashmyeole/TwinMind
    cd TwinMind
    npm install
    ```
-
 2. **Start the Development Server**
+
    ```bash
    npm run dev
    ```
-
 3. **Configure API Key**
+
    - Access the UI running sequentially on `localhost:5173`.
    - Click the **⚙️ Settings** icon in the header.
    - Paste a valid **Groq API Key**. *(Note: This key is stored securely inside your browser's private `localStorage` and is never exported or shared).*
@@ -55,6 +57,6 @@ The core engineering constraint of an active meeting copilot is balancing massiv
 
 ## ⚖️ Tradeoffs & Technical Decisions
 
-* **Promise-Waiting vs SSE Streaming:** While Server-Sent-Events (SSE streaming) is incredibly popular for LLMs right now, handling continuous React component state injections for every single token causes massive internal performance drag (re-renders). **Tradeoff:** By clamping output lengths explicitly via prompt engineering combined with the extraordinary raw inference speed of Groq, we achieve perceived real-time speeds *without* bloating our front-end architecture with complex streaming reducers. 
+* **Promise-Waiting vs SSE Streaming:** While Server-Sent-Events (SSE streaming) is incredibly popular for LLMs right now, handling continuous React component state injections for every single token causes massive internal performance drag (re-renders). **Tradeoff:** By clamping output lengths explicitly via prompt engineering combined with the extraordinary raw inference speed of Groq, we achieve perceived real-time speeds *without* bloating our front-end architecture with complex streaming reducers.
 * **30-Second Interval Slicing:** A continuous WebSocket connection sending raw bytes directly to Whisper would lower transcription latency to ~1s instead of 30s. **Tradeoff:** Websocket audio piping dramatically increases structural complexity. The 30s `MediaRecorder.ondataavailable` chunk method is brutally robust and easily restarts natively if hardware disconnects.
 * **HTML Export over raw JSON:** We opted to compile the export outputs dynamically via string-literal mapping into an independent `.html` wrapper. **Tradeoff:** While raw JSON would be much better for data-ingestion systems, our primary exported stakeholder is human (project managers, directors). The HTML file allows them to double-click and immediately perceive a beautifully colored document, which they natively 'Print-To-PDF' without requiring any dev knowledge.
